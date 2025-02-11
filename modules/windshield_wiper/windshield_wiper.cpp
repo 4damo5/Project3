@@ -36,12 +36,13 @@ Intermittent mode is identical to low-speed mode with the
 #define DUTY_MAX 0.85
 #define DUTY_STOP 0.065
 #define PERIOD 0.02 // Units of period is seconds
-#define HIGH_SPEED 0.05
-#define LOW_SPEED 0.03
-#define INT_SPEED 0.03
-#define STOP 0.075
+#define HIGH_PERIOD 0.04
+#define LOW_PERIOD 0.02
+#define INT_PERIOD 0.02
 
 //=====[Declaration of private data types]=====================================
+
+PwmOut servo(PF_9);
 
 //=====[Declaration and initialization of public global objects]===============
 
@@ -56,7 +57,6 @@ UnbufferedSerial uartUsb(USBTX, USBRX, 115200);
 AnalogIn wiperSelect(A0);
 AnalogIn delaySelect(A1);
 
-int target;
 int delayState;
 windshield_state_t wiperState;
 
@@ -74,7 +74,9 @@ void wipersOff();
 //=====[Implementations of public functions]===================================
 
 void windshieldInit() {
-  servoInit();
+  servo.period(PERIOD);
+  servo.write(DUTY_MIN); // start at 0
+  target = 0;
 }
 
 void windshieldUpdate() { // ingitionRun calls this
@@ -123,6 +125,7 @@ void selectorUpdate() {
 
 void delaySelectorUpdate() {
   float num = delaySelect.read();
+
   if (num >= .06) {
     delayState = 1000;
   } else if (num > .03 && num <= .06) {
@@ -153,12 +156,8 @@ void wipersLow() {
 void wipersInt() {
     delaySelectorUpdate();
     servoUpdate(SERVO_LEFT_F);
-    delay(200);
-    servoUpdate(SERVO_RIGHT_F);
-    delay(200)
-    servoUpdate(SERVO_STOP);
     delay(delayState);
-  
+    servoUpdate(SERVO_RIGHT_F);
 }
 
 void wipersOff() { 
@@ -166,8 +165,6 @@ void wipersOff() {
     delay(200);
     servoUpdate(SERVO_STOP);
 }
-
-
 
 windshield_state_t getWiperState() {
     return wiperState;
